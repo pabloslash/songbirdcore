@@ -1,0 +1,17 @@
+Metadata-Version: 2.1
+Name: songbirdcore
+Version: 0.1
+Summary: Python toolkit for analysis of audio and neural recordings from songbirds.
+Home-page: https://github.com/pabloslash/songbirdcore
+Author: Pablo M. Tostado
+Author-email: tostadomarcos@gmail.com
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# songbird-core
+
+Python toolkit for analysis of audio and neural recordings from songbirds.
