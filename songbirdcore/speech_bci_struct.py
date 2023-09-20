@@ -3,7 +3,7 @@ import socket
 
 locations_dict = dict()
 
-locations_dict['jupyter-pablotostado--phy-2ddesktop'] = {'data': os.path.abspath('/net2/expData/speech_bci/')}
+locations_dict['jupyter-pablotostado--manifold-5fpaper'] = {'data': os.path.abspath('/net2/expData/speech_bci/')}
 
 
 def get_experiment_struct(bird, date, sess, ephys_software='sglx', sort='', location_dict: dict = dict()):
@@ -82,7 +82,7 @@ def get_file_structure(location: dict, sess_par: dict) -> dict:
     # The RAW DATA folders and files of interest (meta, binary etc.):
     exp_struct['folders']['bird'] = os.path.join(location['data'], 'raw_data', bird)
     exp_struct['folders']['raw'] = os.path.join(location['data'], 'raw_data', bird, date)
-    exp_struct['folders'][ephys_folder] = os.path.join(exp_struct['folders']['raw'], ephys_folder)
+    exp_struct['folders'][ephys_folder] = os.path.join(exp_struct['folders']['raw'], ephys_folder, sess)
     for f, n in zip(['rig'], ['rig.json']):
         exp_struct['files'][f] = os.path.join(exp_struct['folders'][ephys_folder], n)
 
