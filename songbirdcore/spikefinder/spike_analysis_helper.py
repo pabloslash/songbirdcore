@@ -135,7 +135,7 @@ def downsample_list_3d(dat, number_bin_samples, mode='sum'):
     return np.array(downsampled_dat)
 
 
-def detect_noisySilent_channels_3d(data, rms_deviation_threshold=3, verbose=True):
+def detect_noisy_silent_channels_3d(data, rms_deviation_threshold=3, verbose=True):
     """"
      Suggests channels to be discarded from analysis because they are too noisy or too silent compared to the rest.
      Any channel with a RMS deviated above / below 'RMS_deviation_threshold' number of SDs of the RMS distribution accross all channels is identified.
@@ -155,10 +155,10 @@ def detect_noisySilent_channels_3d(data, rms_deviation_threshold=3, verbose=True
         concat_data = np.append(concat_data, data[ep], axis=1)
         
     # Detect noisy channels as if data were continuous [channels x samples]
-    return detect_noisySilent_channels_2d(concat_data, rms_deviation_threshold=rms_deviation_threshold, verbose=verbose)
+    return detect_noisy_silent_channels_2d(concat_data, rms_deviation_threshold=rms_deviation_threshold, verbose=verbose)
 
 
-def detect_noisySilent_channels_2d(data, rms_deviation_threshold=3, verbose=True):
+def detect_noisy_silent_channels_2d(data, rms_deviation_threshold=3, verbose=True):
     """"
      Suggests channels to be discarded from analysis because they are too noisy or too silent compared to the rest.
      Any channel with a RMS deviated above / below 'RMS_deviation_threshold' number of SDs of the RMS distribution accross all channels is identified.
@@ -179,7 +179,7 @@ def detect_noisySilent_channels_2d(data, rms_deviation_threshold=3, verbose=True
     return broken_channels
 
 
-def clean_spikeRaster_noisyEvents_3d(spike_raster, coocurrence_threshold=10, verbose=True):
+def clean_spikeRaster_noisy_events_3d(spike_raster, coocurrence_threshold=10, verbose=True):
     """"
      TIP: Feed data binned to 1ms bins.
      Deletes detected spikes from a spike raster. [Ch x Binary samples (0/1)] 
