@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 
 long_description = open("README.md").read()
 
-setup(name='songbird-core',
+setup(name='songbirdcore',
       version='0.1',
       description='Python toolkit for analysis of audio and neural recordings from songbirds.',
       long_description=long_description,
