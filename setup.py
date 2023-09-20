@@ -22,7 +22,7 @@ setup(name='songbird-core',
 #       packages=['SpikeFinder'],
       install_requires=['numpy',
                         'matplotlib',
-                        'pandas>=0.23',
+                        'pandas',
                         'librosa'
                        ],
       
