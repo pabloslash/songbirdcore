@@ -8,11 +8,13 @@ from scipy import stats
 THRESHOLD CROSSINGS
 '''
 
+
 def calculate_signal_rms(signal):
     """"
      Returns the root mean square {sqrt(mean(samples.^2))} of a 1D vector.
     """
     return np.sqrt(np.mean(np.square(signal)))
+
 
 
 def find_threshold_crossings_1d(neural_channel, fs, th=3.5, ap_time=1):
@@ -90,10 +92,10 @@ def downsample_list_1d(dat, number_bin_samples, mode='sum'):
     assert mode in ['sum', 'mean', 'mode'], "Mode type must be 'sum', 'mean', or 'mode', default is 'sum'"
     
     if mode == 'sum':
-        return np.sum(np.array(dat[:(len(dat) // number_bin_samples) * number_bin_samples]).reshape(-1, number_bin_samples), axis=1)
+        return np.nansum(np.array(dat[:(len(dat) // number_bin_samples) * number_bin_samples]).reshape(-1, number_bin_samples), axis=1)
     
     elif mode == 'mean':
-        return np.mean(np.array(dat[:(len(dat) // number_bin_samples) * number_bin_samples]).reshape(-1, number_bin_samples), axis=1)
+        return np.nanmean(np.array(dat[:(len(dat) // number_bin_samples) * number_bin_samples]).reshape(-1, number_bin_samples), axis=1)
     
     elif mode == 'mode':
         return stats.mode(np.array(dat[:(len(dat) // number_bin_samples) * number_bin_samples]).reshape(-1, number_bin_samples), axis=1)[0].reshape(-1)
@@ -179,6 +181,18 @@ def detect_noisy_silent_channels_2d(data, rms_deviation_threshold=3, verbose=Tru
     return broken_channels
 
 
+def remove_silent_channels_2d(data, verbose=True):
+    """"
+     Remove silent channels
+
+     Input:  2D Numpy Array: [Channels x Raw Samples]
+     Output: 2D Numpy Array: [Channels x Raw Samples]
+    """
+    # Remove rows having all zeroes
+    if verbose: print('Removing {} silent channels'.format(len(data[np.all(data == 0, axis=1)])))
+    return data[~np.all(data == 0, axis=1)]
+
+    
 def clean_spikeRaster_noisy_events_3d(spike_raster, coocurrence_threshold=10, verbose=True):
     """"
      TIP: Feed data binned to 1ms bins.
@@ -241,6 +255,7 @@ def clean_spikeRaster_noisyEvents2d(spike_raster, spike_distribution=None, coocu
     cl_spike_raster[:, noisy_idx] = 0
         
     return cl_spike_raster
+
 
 def CAR_2d(neural_data, verbose=True):
     """"
