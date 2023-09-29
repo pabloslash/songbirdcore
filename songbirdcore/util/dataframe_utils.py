@@ -52,7 +52,7 @@ class Kilosort_Df:
         """
 
         # Get all spikes that occur within the time window of interest (start_sample -> end_sample)
-        spk_t = self.spk_df.loc[self.spk_df['times'].between(start_sample, end_sample, "both")]
+        spk_t = self.spk_df.loc[self.spk_df['times'].between(start_sample, end_sample, "left")] # The right-most sample corresponds to the array edge
 
         # Build array of spiking events [m_clusters x n_timestamps]
         spk_arr = np.zeros((clu_list.size, end_sample - start_sample))
@@ -126,3 +126,10 @@ class Kilosort_Df:
         clu_sel = self.spk_df['cluster_id']==cluster_id
         isi = np.diff(self.spk_df.loc[clu_sel].times)
         return isi
+    
+    def save_clu_df_as_pickle(self, save_path: str):
+        """"
+        Save curated cluster dataframe to location 'save_path'.
+        Warning: If path = self.cluster_df_path, the file will be OVERWRITTEN.
+        """
+        self.clu_df.to_pickle(save_path)
