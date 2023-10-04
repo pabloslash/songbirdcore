@@ -9,7 +9,6 @@ import numpy as np
 FILTER FUNCTIONS
 '''
 
-
 # https://scipy-cookbook.readthedocs.io/items/ButterworthBandpass.html
 # Build Butterworth filters with scipy.
 def butter_filt_coefficients(fs, lowcut=[], highcut=[], btype='band', order=5):

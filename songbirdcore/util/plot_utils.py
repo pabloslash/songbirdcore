@@ -7,6 +7,7 @@ import random
 
 
 def plot_as_raster(x, ax=None, t_0=None, s=20, color=None):
+    
     """"
     Plot a binary array of neural events as a raster. 
     

@@ -4,36 +4,80 @@ import pickle
 import songbirdcore.spikefinder.spike_analysis_helper as sh
 
 
-"""Class to work with Pandas Dataframes of spike sorted and audio data"""
+class AudioDictionary:
+    
+    """Class to work with a Dictionary of relevant params and timestamps in neural and audio data"""
+    
+    def __init__(self, audio_array: np.array, all_syn_dict: dict) -> dict:
 
-class Kilosort_Df:
-    def __init__(self, spike_df_path, cluster_df_path, motif_dict_path: None, microphone_path: None):
+        """
+        Arguments:
+            audio_array: Array [n_audio_segments, 2] with [start, end] of the segments of interest in each row, in seconds
+            all_syn_dict: Dictionary of synced streams of interest (e.g. ap_0, lf_0, nidq, wav) 
+        """
         
-        """Data file paths"""
+        s_f_wav = all_syn_dict['wav']['s_f']
+
+        start_ms = (audio_array[:, 0]*1000).astype(np.int64)
+        len_ms = (np.diff(audio_array)*1000).astype(np.int64).flatten()
+
+        self.audio_dict = {
+                's_f': s_f_wav, # s_f used to get the spectrogram
+                's_f_nidq': all_syn_dict['nidq']['s_f'],
+                's_f_ap_0': all_syn_dict['ap_0']['s_f'],
+                'start_ms': start_ms,
+                'len_ms': len_ms,
+                'start_sample_naive': (start_ms * s_f_wav * 0.001).astype(np.int64),
+                'start_sample_nidq': np.array([np.where(all_syn_dict['nidq']['t_0'] > start)[0][0] for start in start_ms*0.001]),
+                'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] > start)[0][0] for start in start_ms*0.001])
+               }
+
+        start_ms_ap_0 = all_syn_dict['wav']['t_p'][self.audio_dict['start_sample_wav']]*1000
+
+        self.audio_dict['start_ms_ap_0'] = start_ms_ap_0
+        self.audio_dict['start_sample_ap_0'] = np.array([np.where(all_syn_dict['ap_0']['t_0'] > start)[0][0] for start in start_ms_ap_0*0.001])
+        self.audio_dict['start_sample_ap_0'] = (self.audio_dict['start_sample_ap_0']).astype(np.int64)
+
+
+    def save_audio_dict_as_pickle(self, save_path: str):
+        """"
+        Save audio_dictionary to location 'save_path'.
+        """
+        
+        with open(save_path, 'wb') as h:
+            pickle.dump(self.audio_dict, h, protocol=pickle.HIGHEST_PROTOCOL)
+        
+        
+class SortDataframe:
+    
+    """Class to work with Pandas Dataframes of spike sorted (kilosort) and audio data"""
+    
+    def __init__(self, spike_df_path, cluster_df_path, audio_dict_path: None, audio_file_path: None):
+        
+        """Load data"""
         self.spike_df_path = spike_df_path
         self.cluster_df_path = cluster_df_path
-        self.motif_dict_path = motif_dict_path
-        self.microphone_path = microphone_path
         
-        """Load dataframes"""
-        # pd.core.frame.DataFrame
         with open(self.spike_df_path, 'rb') as f:
-            self.spk_df = pickle.load(f)
+            self.spk_df = pickle.load(f) # pd.core.frame.DataFrame
         
-        # pd.core.frame.DataFrame
         with open(self.cluster_df_path, 'rb') as f:
-            self.clu_df = pickle.load(f)
-    
-        # pd.core.frame.DataFrame
-        with open(self.motif_dict_path, 'rb') as f:
-            self.mot_dict = pickle.load(f)
+            self.clu_df = pickle.load(f) # pd.core.frame.DataFrame
         
-        # Numpy.array
-        self.audio = np.load(self.microphone_path)
-        
-        """Variables"""
-        self.fs_ap = self.mot_dict['s_f_ap_0']
-        self.fs_audio = self.mot_dict['s_f']
+        if self.self.audio_dict_path:
+            
+            self.self.audio_dict_path = self.audio_dict_path
+            with open(self.self.audio_dict_path, 'rb') as f:
+                self.self.audio_dict = pickle.load(f) # pd.core.frame.DataFrame
+
+            """Sampling frequencies"""
+            self.fs_ap = self.self.audio_dict['s_f_ap_0']
+            self.fs_audio = self.self.audio_dict['s_f']
+            
+        if self.audio_file_path:
+            
+            self.audio_file_path = audio_file_path
+            self.audio = np.load(self.audio_file_path) # Numpy.array
 
     
     def get_window_spikes(self, clu_list: np.array, start_sample: int, end_sample: int, clean_raster=False) -> np.array:
@@ -52,7 +96,7 @@ class Kilosort_Df:
         """
 
         # Get all spikes that occur within the time window of interest (start_sample -> end_sample)
-        spk_t = self.spk_df.loc[self.spk_df['times'].between(start_sample, end_sample, "left")] # The right-most sample corresponds to the array edge
+        spk_t = self.spk_df.loc[self.spk_df['times'].between(start_sample, end_sample, "left")]
 
         # Build array of spiking events [m_clusters x n_timestamps]
         spk_arr = np.zeros((clu_list.size, end_sample - start_sample))
@@ -70,7 +114,8 @@ class Kilosort_Df:
         
     def get_rasters_spikes(self, clu_list: np.array, start_samp_list: np.array, span_samples: int) -> np.array:
         """
-        Return raster of spiking events for clusters of interest (clu_list) within a LIST OF WINDOWS of interest of the same length (start_sample -> start_sample+span_samples)
+        Return raster of spiking events for clusters of interest (clu_list) within a LIST OF WINDOWS of interest of the same length (start_sample
+        -> start_sample+span_samples)
 
         Params:
             spk_df: dataframe containing ALL spikes specifying cluster, nucleus, spike-time, main channel and ksort label.
@@ -86,7 +131,7 @@ class Kilosort_Df:
         return np.stack(spk_arr_list, axis=-1)
 
 
-    def get_rasters_audio(self, start_sample_list: list, span_samples: int) -> np.array:
+    def get_rasters_audio(self, start_sample_list: list, span_samples: int) -> list:
         """
         Return array of snippets of audio specified by start_sample_list (start_sample -> start_sample+span_samples)
 
@@ -110,7 +155,8 @@ class Kilosort_Df:
 
         for n in nuclei:
             for q in qualities:
-                print(n+' '+q+':', len(np.unique(self.clu_df.loc[(self.clu_df['quality']==q) & (self.clu_df['nucleus'].isin([n])), 'cluster_id'])))
+                print(n+' '+q+':', len(np.unique(self.clu_df.loc[(self.clu_df['quality']==q) & (self.clu_df['nucleus'].isin([n])),
+                                                                 'cluster_id'])))
                 
     
     def get_isi(self, cluster_id:int) -> np.array:
@@ -127,9 +173,10 @@ class Kilosort_Df:
         isi = np.diff(self.spk_df.loc[clu_sel].times)
         return isi
     
+    
     def save_clu_df_as_pickle(self, save_path: str):
         """"
         Save curated cluster dataframe to location 'save_path'.
-        Warning: If path = self.cluster_df_path, the file will be OVERWRITTEN.
+        Warning: If path = self.cluster_df_path, the cluster_df_path file will be OVERWRITTEN.
         """
         self.clu_df.to_pickle(save_path)
