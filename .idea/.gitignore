@@ -1,3 +1,11 @@
 
 # Default ignored files
-/workspace.xml
+#/workspace.xml
+/songbirdcore.egg-info/
+/songbirdcore/.ipynb_checkpoints/
+/songbirdcore/__pycache__/
+/songbirdcore/spikefinder/.ipynb_checkpoints/
+/songbirdcore/spikefinder/__pycache__/
+/songbirdcore/util/.ipynb_checkpoints/
+/songbirdcore/util/__pycache__/
+
