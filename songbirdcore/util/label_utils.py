@@ -81,9 +81,24 @@ class TextgridLabels:
                 bout_limits.append([start_bout, end_bout])
 
         return np.array(bout_limits)
+    
+    
+    def get_rasters_labels(self, start_sample_list: list, span_samples: int) -> list:
+        """
+        Return array of snippets of labels specified by start_sample_list (start_sample -> start_sample+span_samples)
 
+        Params:
+            start_sample_list: list of start_times to include in the labels array
+            span_samples: length of the time window of interest (number of samples)
 
-    def find_label_edges(self, labels: list) -> np.array:
+        Return: np.array of snippets of labels [m_label_snippets x n_timestamps] for each period of interest
+        """
+        label_arr_list = [self.labels[start_sample_list[i] : start_sample_list[i]+span_samples] for i in range(len(start_sample_list))]
+        return(np.array(label_arr_list).squeeze().tolist())
+    
+    
+    @staticmethod
+    def find_label_edges(labels: list) -> np.array:
         """
         Find all indexes in a list of labels [1 x labels] where a change of label occurs.
         fnx(np.where) points to the index of the last number before a change occurs, so we add 1 to the index vector.
@@ -95,11 +110,12 @@ class TextgridLabels:
         return lbl_edges
 
 
-    def find_label_edges_2D(self, labels_array: list) -> list:
+    @staticmethod
+    def find_label_edges_2D(labels_array: list) -> list:
         """
         Find all indexes in array of labels [epochs x labels] where a change of label occurs.
         """
         lbl_edges = []
         for e in range(len(labels_array)):
-            lbl_edges.append(find_label_edges(labels_array[e]))
+            lbl_edges.append(TextgridLabels.find_label_edges(labels_array[e]))
         return lbl_edges

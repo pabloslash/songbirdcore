@@ -32,7 +32,8 @@ class AudioDictionary:
                 'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] > start)[0][0] for start in start_ms*0.001])
                }
 
-        start_ms_ap_0 = all_syn_dict['wav']['t_p'][self.audio_dict['start_sample_wav']]*1000
+        # start_ms_ap_0 = all_syn_dict['wav']['t_p'][self.audio_dict['start_sample_wav']]*1000
+        start_ms_ap_0 = all_syn_dict['nidq']['t_p'][self.audio_dict['start_sample_nidq']]*1000
 
         self.audio_dict['start_ms_ap_0'] = start_ms_ap_0
         self.audio_dict['start_sample_ap_0'] = np.array([np.where(all_syn_dict['ap_0']['t_0'] > start)[0][0] for start in start_ms_ap_0*0.001])
@@ -64,23 +65,24 @@ class SortDataframe:
         with open(self.cluster_df_path, 'rb') as f:
             self.clu_df = pickle.load(f) # pd.core.frame.DataFrame
         
-        if self.self.audio_dict_path:
+        if audio_dict_path:
             
-            self.self.audio_dict_path = self.audio_dict_path
-            with open(self.self.audio_dict_path, 'rb') as f:
-                self.self.audio_dict = pickle.load(f) # pd.core.frame.DataFrame
+            self.audio_dict_path = audio_dict_path
+            with open(self.audio_dict_path, 'rb') as f:
+                self.audio_dict = pickle.load(f) # pd.core.frame.DataFrame
 
             """Sampling frequencies"""
-            self.fs_ap = self.self.audio_dict['s_f_ap_0']
-            self.fs_audio = self.self.audio_dict['s_f']
+            self.fs_ap = self.audio_dict['s_f_ap_0']
+            self.fs_audio = self.audio_dict['s_f']
             
-        if self.audio_file_path:
+        if audio_file_path:
             
             self.audio_file_path = audio_file_path
             self.audio = np.load(self.audio_file_path) # Numpy.array
 
     
-    def get_window_spikes(self, clu_list: np.array, start_sample: int, end_sample: int, clean_raster=False) -> np.array:
+    def get_window_spikes(self, clu_list: np.array, start_sample: int, end_sample: int, clean_raster=False, verbose=True) -> np.array:
+        
         """
         Return array of spiking events for clusters of interest (clu_list) within a window of interest (start_sample -> end_sample)
 
@@ -106,13 +108,13 @@ class SortDataframe:
             spk_arr[i, clu_spk_t - start_sample] = 1
 
         if clean_raster:
-            spk_arr = sh.clean_spikeRaster_noisyEvents2d(spk_arr) # Remove noisy (simultaneous) events
-            spk_arr = sh.remove_silent_channels_2d(spk_arr)
+            spk_arr = sh.clean_spikeRaster_noisyEvents2d(spk_arr, verbose=verbose) # Remove noisy (simultaneous) events
+            spk_arr = sh.remove_silent_channels_2d(spk_arr, verbose=verbose)
 
         return spk_arr
     
         
-    def get_rasters_spikes(self, clu_list: np.array, start_samp_list: np.array, span_samples: int) -> np.array:
+    def get_rasters_spikes(self, clu_list: np.array, start_samp_list: np.array, span_samples: int, clean_raster=False, verbose=True) -> np.array:
         """
         Return raster of spiking events for clusters of interest (clu_list) within a LIST OF WINDOWS of interest of the same length (start_sample
         -> start_sample+span_samples)
@@ -122,12 +124,14 @@ class SortDataframe:
             clu_list: list of clusters to include in the raster plot
             start_samp_list: list of start samples of interest
             span_samples: length of the time window (number of samples)
+        Keyword Params:
+            clean_raster: bool. Remove events that co-occur across clusters
 
         Return: np.array of spiking events within the window of interest [m_clusters x n_timestamps] for each period of interest
         """
 
         # Build array of spiking events [m_clusters x n_timestamps] for the clusters of interes, for each period specified by the start_samp_list
-        spk_arr_list = [self.get_window_spikes(clu_list, i, i+span_samples) for i in start_samp_list]
+        spk_arr_list = [self.get_window_spikes(clu_list, i, i+span_samples, clean_raster=clean_raster, verbose=verbose) for i in start_samp_list]
         return np.stack(spk_arr_list, axis=-1)
 
 
@@ -136,7 +140,6 @@ class SortDataframe:
         Return array of snippets of audio specified by start_sample_list (start_sample -> start_sample+span_samples)
 
         Params:
-            audio: audio signal
             start_sample_list: list of start_times to include in the audio array
             span_samples: length of the time window of interest (number of samples)
 
