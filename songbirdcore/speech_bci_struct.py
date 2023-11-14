@@ -3,7 +3,9 @@ import socket
 
 locations_dict = dict()
 
-locations_dict['jupyter-pablotostado--manifold-5fpaper'] = {'data': os.path.abspath('/net2/expData/speech_bci/')}
+locations_dict['jupyter-pablotostado'] = {'data': os.path.abspath('/net2/expData/speech_bci/')}
+locations_dict['jupyter-pablotostado--hmem-2dmanifold'] = {'data': os.path.abspath('/net2/expData/speech_bci/')}
+locations_dict['jupyter-pablotostado--encodec-2dgpu'] = {'data': os.path.abspath('/net2/expData/speech_bci/')}
 
 
 def get_experiment_struct(bird, date, sess, ephys_software='sglx', sort='', location_dict: dict = dict()):

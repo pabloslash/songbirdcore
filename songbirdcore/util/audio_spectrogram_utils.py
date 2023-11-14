@@ -2,6 +2,7 @@ from scipy import signal
 import numpy as np 
 from scipy.signal import butter, filtfilt
 import librosa
+from matplotlib import pyplot as plt
 
 
 ''' SPECTROGRAMS '''

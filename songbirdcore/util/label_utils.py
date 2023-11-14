@@ -1,12 +1,12 @@
 import numpy as np
 from praatio import tgio
-
+import warnings
 
 class TextgridLabels:
     
     """ This class can be used to work with a .Textgrid file containing annotated labels for an audio file, e.g. using Praat"""
         
-    def __init__(self, textgrid_file_path: str, audio_file_path: str, fs_audio: float, labels_tier: str='syllables') -> list:
+    def __init__(self, textgrid_file_path: str, audio_file_path: str, fs_audio: float, labels_tier: str='labels') -> list:
 
         self.textgrid_file_path = textgrid_file_path
         self.audio_file_path = audio_file_path
@@ -15,6 +15,10 @@ class TextgridLabels:
         """Load data"""
         self.audio = np.load(self.audio_file_path)   # Numpy.array 
         self.labels = self.load_labels_from_textgrid(labels_tier=labels_tier)
+        
+        if len(self.audio)!=len(self.labels): 
+            warnings.warn("WARNING: audio length is different than labels length.")
+            print('Len audio: ', len(self.audio), ', len labels: ', len(self.labels))
 
         
     def load_labels_from_textgrid(self, labels_tier: str='syllables') -> list:
@@ -30,16 +34,38 @@ class TextgridLabels:
                 !TODO: Modify this function to read multiple tiers if desired.
         """
         tg = tgio.openTextgrid(self.textgrid_file_path)
+        print('Tier Name List: ', tg.tierNameList)
         entryList = tg.tierDict[labels_tier].entryList # Get all intervals
 
         # Create list of labels
         labels = []
         for i, interval in enumerate(entryList):
             # ! Round the fs_audio & the interval times (for number of samples in labels and audio array to match)
-            labels.extend([interval.label for n in range(round(interval.end*round(self.fs_audio)) - round(interval.start*round(self.fs_audio)))])
+            labels.extend([interval.label for n in range(round(interval.end*self.fs_audio - interval.start*self.fs_audio))])
         return labels
 
+                                                            
+    def find_missing_label_intervals(self, labels_tier: str='labels'):
+        """
+            Find intervals (in seconds) od missing labels.
+            Return a list of time intervals [start_s, end_s] where the labels.Textgrid file is missing a label.
+        """
+        tg = tgio.openTextgrid(self.textgrid_file_path)
+        print('Tier Name List: ', tg.tierNameList)
+        entryList = tg.tierDict[labels_tier].entryList # Get all intervals                                                  
+                    
+        # Create list of 'missing-label times' in seconds
+        missing_label_intervals = []
+        for i in range(len(entryList)-1):
+            if (entryList[i].end != entryList[i+1].start): 
+                print('Missing label in interval: ', i, entryList[i].end, entryList[i+1].start)
+                missing_label_intervals.append([entryList[i].end, entryList[i+1].start])
 
+        if not missing_label_intervals: print('All intervals in the tier of interest of the .Textgrid file have been labeled (no missing labels).')
+        
+        return missing_label_intervals                                       
+                                                            
+                                                            
     def find_label_starts(self, target_label: int) -> np.array:
         """
             Return an array of indexes where the target label occurs starts in a list of labels.

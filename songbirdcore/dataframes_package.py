@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import songbirdcore.spikefinder.spike_analysis_helper as sh
+import os
 
 
 class AudioDictionary:
@@ -16,24 +17,28 @@ class AudioDictionary:
             all_syn_dict: Dictionary of synced streams of interest (e.g. ap_0, lf_0, nidq, wav) 
         """
         
-        s_f_wav = all_syn_dict['wav']['s_f']
+        # Usually under-estimated (e.g. 39999.3 -> 40k)
+        s_f_wav = np.ceil(all_syn_dict['nidq']['s_f'])
+        s_f_nidq = np.ceil(all_syn_dict['nidq']['s_f'])
+        s_f_ap = np.ceil(all_syn_dict['ap_0']['s_f'])
 
         start_ms = (audio_array[:, 0]*1000).astype(np.int64)
         len_ms = (np.diff(audio_array)*1000).astype(np.int64).flatten()
 
         self.audio_dict = {
                 's_f': s_f_wav, # s_f used to get the spectrogram
-                's_f_nidq': all_syn_dict['nidq']['s_f'],
-                's_f_ap_0': all_syn_dict['ap_0']['s_f'],
+                's_f_nidq': s_f_nidq,
+                's_f_ap_0': s_f_ap,
                 'start_ms': start_ms,
                 'len_ms': len_ms,
                 'start_sample_naive': (start_ms * s_f_wav * 0.001).astype(np.int64),
-                'start_sample_nidq': np.array([np.where(all_syn_dict['nidq']['t_0'] > start)[0][0] for start in start_ms*0.001]),
-                'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] > start)[0][0] for start in start_ms*0.001])
+                'start_sample_nidq': np.array([np.where(all_syn_dict['nidq']['t_0'] > start)[0][0] for start in start_ms*0.001])
+                # 'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] > start)[0][0] for start in start_ms*0.001])
                }
 
         # start_ms_ap_0 = all_syn_dict['wav']['t_p'][self.audio_dict['start_sample_wav']]*1000
-        start_ms_ap_0 = all_syn_dict['nidq']['t_p'][self.audio_dict['start_sample_nidq']]*1000
+        # start_ms_ap_0 = all_syn_dict['nidq']['t_p'][self.audio_dict['start_sample_nidq']]*1000
+        start_ms_ap_0 = all_syn_dict['nidq']['t_p'][self.audio_dict['start_sample_naive']]*1000
 
         self.audio_dict['start_ms_ap_0'] = start_ms_ap_0
         self.audio_dict['start_sample_ap_0'] = np.array([np.where(all_syn_dict['ap_0']['t_0'] > start)[0][0] for start in start_ms_ap_0*0.001])
@@ -177,9 +182,130 @@ class SortDataframe:
         return isi
     
     
+    
     def save_clu_df_as_pickle(self, save_path: str):
         """"
         Save curated cluster dataframe to location 'save_path'.
         Warning: If path = self.cluster_df_path, the cluster_df_path file will be OVERWRITTEN.
         """
         self.clu_df.to_pickle(save_path)
+        
+    
+    @staticmethod
+    def calculate_burstiness_index_as_coefficient_of_variation(spiketrain: np.ndarray, window_ms: int, fs: int) -> float:
+        """
+            spiketrain: [1 x spiketrain]
+
+            Coefficient of Variation (CV) = (σ / μ) * 100%
+            A higher coefficient of variation indicates greater relative variability in relation to the mean.
+        """
+        spikerate = sh.downsample_list_1d(spiketrain, number_bin_samples=int(window_ms/1000*fs), mode='sum') / (window_ms/1000)
+
+        if np.mean(spikerate) == 0: return 0.0
+        else: return np.std(spikerate) / np.mean(spikerate) # Burstiness index = std_spikerate / baseline_spikerate  
+    
+    
+    @staticmethod
+    def calculate_burstiness_index_as_num_bursts(spiketrain: np.ndarray, burst_samples_window: int, spikes_in_burst: int=3):
+        """
+            spiketrain: [1 x spiketrain]
+
+            E.g. in a spiketrain with 200 spikes, define a burst as a sequence of at least 5 spikes within a 10 ms window. 
+            If 30 bursts are identified, the burstiness index would be 30 bursts * 5 spikes/burst / 200 spikes = 0.75.
+        """
+        burst_counter = 0
+        num_spikes = np.sum(spiketrain)
+
+        # If there are no spikes in the spiketrain: burstiness index = 0
+        if num_spikes == 0:
+            return 0.0
+        else:
+            i = 0
+            while i < len(spiketrain) - burst_samples_window:
+                if np.sum(spiketrain[i:i+burst_samples_window]) >= spikes_in_burst: 
+                    burst_counter+=1
+                    i += burst_samples_window # Skip burst
+                else:
+                    i += 1
+
+        return ((burst_counter*spikes_in_burst)/num_spikes)
+
+
+
+        
+        
+        
+        
+        
+""" Extra functions"""        
+
+def load_spikes_from_kilosort_files(ks_folder: str, curated=True) -> tuple:
+    """
+        Build 'clu_df' and 'spk_df' from files outputed by kilosort and Phy after sorting and manual curation.
+    """
+
+    spk_dict = {k: np.load(os.path.join(ks_folder,
+                                        'spike_{}.npy'.format(k))).flatten() for k in ['times', 'clusters']}
+
+    spk_dict['cluster_id'] = spk_dict['clusters']
+    spk_df = pd.DataFrame(spk_dict)
+
+    templ_arr = np.load(os.path.join(ks_folder, 'templates.npy'))
+
+    # Make a 'symmetric' dataframe, both for manually curated and not.
+    # 'group' is the valid label. It is 'MSLabel' when manually curated, 'KSLabel' when not.
+    # 'KSLabel' is always there. It is equal to 'group' if no manual curation.
+    # 'MSLabel' is always there. It is equal to 'group' if manually curated, otherwise None.
+    # 'main_chan' comes from cluster_info when manually curated. Otherwise is ti computed from the template
+    # 'template' not always exists when manually curated. It only exists for clusters that were not created when curating with phy i.e merges)
+
+    if curated:
+        label_file = 'cluster_info.tsv'
+        clu_df = pd.read_csv(os.path.join(ks_folder, label_file),
+                             sep='\t', header=0)
+        # rename or add manual sorted metadata
+        clu_df['main_chan'] = clu_df['ch']
+        clu_df['MSLabel'] = clu_df['group']
+
+        # Any new clusters created by merging clusters during manually curation will not have a template.
+        # They can be identified by the cluster_id number, which is higher than the last cluster_id of the automatic sorting (the ones in
+        # template_arr)
+        # For any cluster_id > templ_arr.shape[0], fill the template with zeros.
+        # Todo: get the missing templates from the temp_wh.dat matrix
+        # get the templates
+        clu_df['has_template'] = clu_df['cluster_id'].apply(
+            lambda x: True if x < templ_arr.shape[0] else False)
+
+    else:
+        label_file = 'cluster_KSLabel.tsv'
+        clu_df = pd.read_csv(os.path.join(ks_folder, label_file),
+                             sep='\t', header=0)
+        clu_df['group'] = clu_df['KSLabel']
+        clu_df['MSLabel'] = None
+        # All clusters have template if no manual curation
+        clu_df['has_template'] = True
+
+    # sort spike times
+    spk_df.sort_values(['times'], inplace=True)
+
+    # get the templates wherever they exist
+    h_t = (clu_df['has_template'])
+
+    clu_df['template'] = clu_df['cluster_id'].apply(
+        lambda x: templ_arr[x] if x < templ_arr.shape[0] else np.zeros_like(templ_arr[0]))
+
+    # with the templates, compute the sorted chanels, main channel, main 7 channels and waveform for the 7 channels
+    h_t = (clu_df['has_template'])
+    clu_df.loc[h_t, 'max_chans'] = clu_df.loc[h_t, 'template'].apply(
+        lambda x: np.argsort(np.ptp(x, axis=0))[::-1])
+    clu_df.loc[h_t, 'main_chan'] = clu_df.loc[h_t,
+                                              'max_chans'].apply(lambda x: x[0])
+
+    clu_df.loc[h_t, 'main_7'] = clu_df.loc[h_t,
+                                           'max_chans'].apply(lambda x: np.sort(x[:7]))
+    clu_df.loc[h_t, 'main_wav_7'] = clu_df.loc[h_t, :].apply(
+        lambda x: x['template'][:, x['max_chans'][:7]], axis=1)
+
+    clu_df.sort_values(['group', 'main_chan'], inplace=True)
+
+    return clu_df, spk_df
