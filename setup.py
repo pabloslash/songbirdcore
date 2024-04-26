@@ -21,7 +21,8 @@ setup(name='songbirdcore',
       install_requires=['numpy',
                         'matplotlib',
                         'pandas',
-                        'librosa'
+                        'librosa',
+                        'praatio<5'
                        ],
       
       classifiers=(

@@ -5,8 +5,8 @@ import numpy as np
 from numba import prange
 import random
 from matplotlib.gridspec import GridSpec
-import songbirdcore.util.label_utils as luts
-from songbirdcore.style_params import syl_colors
+import songbirdcore.utils.label_utils as luts
+from songbirdcore.utils.style_params import syl_colors
 
 
 def plot_as_raster(x, ax=None, t_0=None, s=20, color=None):
@@ -26,7 +26,7 @@ def plot_as_raster(x, ax=None, t_0=None, s=20, color=None):
     x_array = copy.deepcopy(x)
     n_y, n_t = x_array.shape
     
-    row = np.ones(n_t) + 1
+    row = np.ones(n_t)
     t = np.arange(n_t)
     col = np.arange(n_y)
     
@@ -43,11 +43,14 @@ def plot_as_raster(x, ax=None, t_0=None, s=20, color=None):
             
     raster = ax.scatter(t * x_array, frame * x_array, marker='.', facecolor=facecolor, s=s, rasterized=False)
     
+    # Set x-axis limits to show the whole range of the raster, otherwise some nan values may be ignored
+    ax.set_xlim([0, x_array.shape[1]])
+    
     if t_0 is not None:
         ax.axvline(x=t_0, color='green')
         
     return ax
-
+    
 
 def plottable_array(x:np.ndarray, scale:np.ndarray, offset:np.ndarray) -> np.ndarray:
     """ Rescale and offset an array for quick plotting multiple channels, along the 
@@ -204,5 +207,6 @@ def plot_3D_trajectories(trajectories: np.array, trajectory_labels: np.array=Non
         ax.spines.top.set_visible(False)
         ax.spines.bottom.set_visible(False)
         ax.yaxis.set_tick_params(labelsize=25)
+        ax.margins(0)
     
     return fig

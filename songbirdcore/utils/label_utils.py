@@ -1,5 +1,6 @@
 import numpy as np
 from praatio import tgio
+from scipy.interpolate import make_interp_spline
 import warnings
 
 class TextgridLabels:
@@ -11,6 +12,9 @@ class TextgridLabels:
         self.textgrid_file_path = textgrid_file_path
         self.audio_file_path = audio_file_path
         self.fs_audio = fs_audio
+        
+        """Check TextGrid"""
+        self.missing_label_intervals = self.find_missing_label_intervals(labels_tier=labels_tier)
         
         """Load data"""
         self.audio = np.load(self.audio_file_path)   # Numpy.array 
@@ -41,7 +45,7 @@ class TextgridLabels:
         labels = []
         for i, interval in enumerate(entryList):
             # ! Round the fs_audio & the interval times (for number of samples in labels and audio array to match)
-            labels.extend([interval.label for n in range(round(interval.end*self.fs_audio - interval.start*self.fs_audio))])
+            labels.extend([interval.label for n in range(round((interval.end - interval.start)*round(self.fs_audio)))])
         return labels
 
                                                             
@@ -51,7 +55,6 @@ class TextgridLabels:
             Return a list of time intervals [start_s, end_s] where the labels.Textgrid file is missing a label.
         """
         tg = tgio.openTextgrid(self.textgrid_file_path)
-        print('Tier Name List: ', tg.tierNameList)
         entryList = tg.tierDict[labels_tier].entryList # Get all intervals                                                  
                     
         # Create list of 'missing-label times' in seconds
@@ -62,6 +65,7 @@ class TextgridLabels:
                 missing_label_intervals.append([entryList[i].end, entryList[i+1].start])
 
         if not missing_label_intervals: print('All intervals in the tier of interest of the .Textgrid file have been labeled (no missing labels).')
+        else: print('The following intervals in the .TextGrid file have not been labeled: {}'.format(missing_label_intervals))
         
         return missing_label_intervals                                       
                                                             
@@ -122,14 +126,19 @@ class TextgridLabels:
         label_arr_list = [self.labels[start_sample_list[i] : start_sample_list[i]+span_samples] for i in range(len(start_sample_list))]
         return(np.array(label_arr_list).squeeze().tolist())
     
-    
+
     @staticmethod
     def find_label_edges(labels: list) -> np.array:
-        """
+        ''' 
         Find all indexes in a list of labels [1 x labels] where a change of label occurs.
         fnx(np.where) points to the index of the last number before a change occurs, so we add 1 to the index vector.
         Add index 0 and last index (len(mot)) for plotting purposes.
-        """
+        
+        Parameters:
+            labels: tends to be a 1d list of integers where each element indicates the label of a single sample of a corresponding signal.
+        Output:
+            1D list containing the indexes where a label change occurs in labels.
+        '''
         lbl_edges = np.where(np.diff(labels))[0] + 1 
         lbl_edges = np.insert(lbl_edges, 0, 0)
         lbl_edges = np.append(lbl_edges, len(labels))
@@ -138,10 +147,53 @@ class TextgridLabels:
 
     @staticmethod
     def find_label_edges_2D(labels_array: list) -> list:
-        """
-        Find all indexes in array of labels [epochs x labels] where a change of label occurs.
-        """
+        ''' 
+        Find indexes in array of labels [trials x label_signals] where a change of label occurs.
+        
+        Parameters:
+            label_signal_2d: 2D list / np.ndarray of trials x label_signals. 
+            A label signal tends to be a 1d list of integers where each element indicates the label of a single sample of a corresponding signal.
+        Output:
+            2D list of [motifs x change of label indexes] containing the indexes along all trials where a label change occurs.
+        '''
         lbl_edges = []
         for e in range(len(labels_array)):
             lbl_edges.append(TextgridLabels.find_label_edges(labels_array[e]))
         return lbl_edges
+
+
+    @staticmethod
+    def list_expander(list_1d: list, expand_multiplier:int) -> np.ndarray:
+        '''
+        Extend a list or array by repeating each element in the array (n) times
+        
+        Parameters:
+            list_1d: 1D list or array to be expanded
+            expand_multiplier: (n) times to repeat each element in list_1d
+        Output:
+            1D array with length: len(list_1d) * expand_multiplier
+        '''
+        return np.array([[i]*expand_multiplier for i in list_1d]).reshape(expand_multiplier*len(list_1d))
+    
+
+    @staticmethod
+    def signal_smoother(signal: np.ndarray, interp_multiplier: int, interp_order: int):
+        '''
+        Smooth an input signal using an interpolating B-spline
+        
+        Parameters:
+            signal: 1D numpy.ndarray to be smothed
+            interp_multiplier: defines the final number of samples of the smoothed signal
+            interp_order: order of the spline to fit to the input signal
+        Output:
+            1D smoothed signal with length: len(signal) * interp_multiplier
+        '''
+        
+        # Number of samples in original signal
+        x_linspace = np.linspace(0, len(signal), len(signal))
+        # Number of samples in smoothed signal
+        x_linspace_smooth = np.linspace(0, len(signal), interp_multiplier*len(signal))    
+        # Signal interpolator
+        spline = make_interp_spline(x_linspace, signal, k=interp_order)
+        return spline(x_linspace_smooth)
+

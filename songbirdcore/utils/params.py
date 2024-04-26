@@ -49,7 +49,7 @@ class BirdSpecificParams:
                                         '5': 5, # s5
                                         '6': 9, # s6 intra-motif note: green #349946
                                         '7': 7, # s7
-                                        'i': 14, # 
+                                        'i': 10, # 
                                         'I': 10, # intro note
                                         'C': 11, # calls
                                         'u': 12, # Unlabeled
@@ -67,7 +67,7 @@ class BirdSpecificParams:
                                         '5': 5, # s5
                                         '6': 6, # s6
                                         '7': 9, # s7 intra-motif note: green #349946
-                                        'i': 14, # 
+                                        'i': 10, # 
                                         'I': 10, # intro note
                                         'C': 11, # calls
                                         'u': 12, # Unlabeled
@@ -85,7 +85,7 @@ class BirdSpecificParams:
                                         '5': 5, # s5
                                         '6': 6, # s6
                                         '7': 7, # s7
-                                        'i': 14, # 
+                                        'i': 10, # 
                                         'I': 10, # intro note
                                         'C': 11, # calls
                                         'u': 12, # Unlabeled
@@ -103,7 +103,7 @@ class BirdSpecificParams:
                                         '5': 5, # s5
                                         '6': 6, # s6
                                         '7': 7, # s7
-                                        'i': 14, # 
+                                        'i': 10, # 
                                         'I': 10, # intro note
                                         'C': 11, # calls
                                         'u': 12, # Unlabeled

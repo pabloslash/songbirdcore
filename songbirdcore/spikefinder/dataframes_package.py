@@ -13,7 +13,8 @@ class AudioDictionary:
 
         """
         Arguments:
-            audio_array: Array [n_audio_segments, 2] with [start, end] of the segments of interest in each row, in seconds
+            audio_array: Array [n_audio_segments, 2] with [start, end] 
+            of the segments of interest in each row, inseconds
             all_syn_dict: Dictionary of synced streams of interest (e.g. ap_0, lf_0, nidq, wav) 
         """
         
@@ -32,8 +33,10 @@ class AudioDictionary:
                 'start_ms': start_ms,
                 'len_ms': len_ms,
                 'start_sample_naive': (start_ms * s_f_wav * 0.001).astype(np.int64),
-                'start_sample_nidq': np.array([np.where(all_syn_dict['nidq']['t_0'] > start)[0][0] for start in start_ms*0.001])
-                # 'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] > start)[0][0] for start in start_ms*0.001])
+                'start_sample_nidq': np.array([np.where(all_syn_dict['nidq']['t_0'] 
+                                                        > start)[0][0] for start in start_ms*0.001])
+                # 'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] 
+                #> start)[0][0] for start in start_ms*0.001])
                }
 
         # start_ms_ap_0 = all_syn_dict['wav']['t_p'][self.audio_dict['start_sample_wav']]*1000
@@ -41,7 +44,8 @@ class AudioDictionary:
         start_ms_ap_0 = all_syn_dict['nidq']['t_p'][self.audio_dict['start_sample_naive']]*1000
 
         self.audio_dict['start_ms_ap_0'] = start_ms_ap_0
-        self.audio_dict['start_sample_ap_0'] = np.array([np.where(all_syn_dict['ap_0']['t_0'] > start)[0][0] for start in start_ms_ap_0*0.001])
+        self.audio_dict['start_sample_ap_0'] = np.array([np.where(all_syn_dict['ap_0']['t_0'] 
+                                                                  > start)[0][0] for start in start_ms_ap_0*0.001])
         self.audio_dict['start_sample_ap_0'] = (self.audio_dict['start_sample_ap_0']).astype(np.int64)
 
 
@@ -86,13 +90,16 @@ class SortDataframe:
             self.audio = np.load(self.audio_file_path) # Numpy.array
 
     
-    def get_window_spikes(self, clu_list: np.array, start_sample: int, end_sample: int, clean_raster=False, verbose=True) -> np.array:
+    def get_window_spikes(self, clu_list: np.array, start_sample: int, end_sample: int, 
+                          clean_raster=False, verbose=True) -> np.array:
         
         """
-        Return array of spiking events for clusters of interest (clu_list) within a window of interest (start_sample -> end_sample)
+        Return array of spiking events for clusters of interest (clu_list) 
+        within a window of interest (start_sample -> end_sample)
 
         Params:
-            spk_df: dataframe containing ALL spikes specifying cluster, nucleus, spike-time, main channel and ksort label.
+            spk_df: dataframe containing ALL spikes specifying cluster, 
+            nucleus, spike-time, main channel and ksort label.
             clu_list: list of clusters to include in the raster plot
             start_sample: start sample of the window of interest
             end_sample: end sample of the window of interest
@@ -119,24 +126,29 @@ class SortDataframe:
         return spk_arr
     
         
-    def get_rasters_spikes(self, clu_list: np.array, start_samp_list: np.array, span_samples: int, clean_raster=False, verbose=True) -> np.array:
+    def get_rasters_spikes(self, clu_list: np.array, start_samp_list: np.array, 
+                           span_samples: int, clean_raster=False, verbose=True) -> np.array:
         """
-        Return raster of spiking events for clusters of interest (clu_list) within a LIST OF WINDOWS of interest of the same length (start_sample
+        Return raster of spiking events for clusters of interest (clu_list) 
+        within a LIST OF WINDOWS of interest of the same length (start_sample
         -> start_sample+span_samples)
 
         Params:
-            spk_df: dataframe containing ALL spikes specifying cluster, nucleus, spike-time, main channel and ksort label.
+            spk_df: dataframe containing ALL spikes specifying cluster, 
+            nucleus, spike-time, main channel and ksort label.
             clu_list: list of clusters to include in the raster plot
             start_samp_list: list of start samples of interest
             span_samples: length of the time window (number of samples)
         Keyword Params:
             clean_raster: bool. Remove events that co-occur across clusters
 
-        Return: np.array of spiking events within the window of interest [m_clusters x n_timestamps] for each period of interest
+        Return: np.array of spiking events within the window of interest [trials x m_clusters x n_timestamps] 
+        for each period of interest
         """
 
-        # Build array of spiking events [m_clusters x n_timestamps] for the clusters of interes, for each period specified by the start_samp_list
-        spk_arr_list = [self.get_window_spikes(clu_list, i, i+span_samples, clean_raster=clean_raster, verbose=verbose) for i in start_samp_list]
+        # Build array of spiking events [trials x m_clusters x n_timestamps] for the clusters of interes, for each period specified by the start_samp_list
+        spk_arr_list = [self.get_window_spikes(clu_list, i, i+span_samples, clean_raster=clean_raster, 
+                                               verbose=verbose) for i in start_samp_list]
         return np.stack(spk_arr_list, axis=-1)
 
 
@@ -150,7 +162,8 @@ class SortDataframe:
 
         Return: np.array of snippets of audio [m_audio_snippets x n_timestamps] for each period of interest
         """
-        audio_arr_list = [self.audio[start_sample_list[i] : start_sample_list[i]+span_samples] for i in range(len(start_sample_list))]
+        audio_arr_list = [self.audio[start_sample_list[i] : start_sample_list[i]+span_samples] 
+                          for i in range(len(start_sample_list))]
         return(np.array(audio_arr_list).squeeze().tolist())
     
     
@@ -163,8 +176,8 @@ class SortDataframe:
 
         for n in nuclei:
             for q in qualities:
-                print(n+' '+q+':', len(np.unique(self.clu_df.loc[(self.clu_df['quality']==q) & (self.clu_df['nucleus'].isin([n])),
-                                                                 'cluster_id'])))
+                print(n+' '+q+':', len(np.unique(self.clu_df.loc[(self.clu_df['quality']==q) &
+                                                 (self.clu_df['nucleus'].isin([n])), 'cluster_id'])))
                 
     
     def get_isi(self, cluster_id:int) -> np.array:
@@ -180,8 +193,7 @@ class SortDataframe:
         clu_sel = self.spk_df['cluster_id']==cluster_id
         isi = np.diff(self.spk_df.loc[clu_sel].times)
         return isi
-    
-    
+     
     
     def save_clu_df_as_pickle(self, save_path: str):
         """"
@@ -199,18 +211,21 @@ class SortDataframe:
             Coefficient of Variation (CV) = (σ / μ) * 100%
             A higher coefficient of variation indicates greater relative variability in relation to the mean.
         """
-        spikerate = sh.downsample_list_1d(spiketrain, number_bin_samples=int(window_ms/1000*fs), mode='sum') / (window_ms/1000)
+        spikerate = sh.downsample_list_1d(spiketrain, number_bin_samples=int(window_ms/1000*fs), 
+                                          mode='sum') / (window_ms/1000)
 
         if np.mean(spikerate) == 0: return 0.0
         else: return np.std(spikerate) / np.mean(spikerate) # Burstiness index = std_spikerate / baseline_spikerate  
     
     
     @staticmethod
-    def calculate_burstiness_index_as_num_bursts(spiketrain: np.ndarray, burst_samples_window: int, spikes_in_burst: int=3):
+    def calculate_burstiness_index_as_num_bursts(spiketrain: np.ndarray, 
+                                                 burst_samples_window: int, spikes_in_burst: int=3):
         """
             spiketrain: [1 x spiketrain]
 
-            E.g. in a spiketrain with 200 spikes, define a burst as a sequence of at least 5 spikes within a 10 ms window. 
+            E.g. in a spiketrain with 200 spikes, define a burst as a sequence of 
+            at least 5 spikes within a 10 ms window. 
             If 30 bursts are identified, the burstiness index would be 30 bursts * 5 spikes/burst / 200 spikes = 0.75.
         """
         burst_counter = 0
@@ -229,12 +244,6 @@ class SortDataframe:
                     i += 1
 
         return ((burst_counter*spikes_in_burst)/num_spikes)
-
-
-
-        
-        
-        
         
         
 """ Extra functions"""        

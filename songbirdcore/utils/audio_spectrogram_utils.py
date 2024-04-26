@@ -8,6 +8,18 @@ from matplotlib import pyplot as plt
 ''' SPECTROGRAMS '''
 
 
+def plot_spectrogram(signal, sr, axis, n_window=512, step_ms=1, f_min=1000, f_max=8000, cut_off=5.5e-05):
+    '''
+    Plot spectrogram given a signal and sampling rate (and figure axis).
+    '''
+    
+    f, tm, sxx = ms_spectrogram(signal, sr, n_window=n_window, step_ms=step_ms, 
+                                     f_min=f_min, f_max=f_max, cut_off=cut_off)
+    axis.pcolormesh(tm, f, np.log(sxx), cmap='inferno')
+    axis.set_ylabel('f (kHz)', fontsize=20)
+    axis.set_yticklabels(['1', '2', '4', '6', '8'], fontsize=14)
+
+
 def pretty_spectrogram(x, s_f, log=True, fft_size=512, step_size=64, window=None,
                        db_cut=65, f_min=0., f_max=None, plot=False, ax=None): 
     """
@@ -103,9 +115,7 @@ def ms_spectrogram(x, s_f, n_window=512, step_ms=1, f_min=100, f_max=9000, cut_o
 
     if cut_off > 0:
         Sxx[Sxx < np.max((Sxx) * cut_off)] = 1
-    
     Sxx[f<f_min, :] = 1
-
     return f[(f>f_min) & (f<f_max)], t, Sxx[(f>f_min) & (f<f_max)]
 
 

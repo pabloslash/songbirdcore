@@ -35,22 +35,22 @@ def compute_trajectories_dispersion(trajectories: np.ndarray):
     :return: np.array containing latent dispersion
     """
 
-    # Mean trajectory across time (u_t)
-    mean_trajectory = np.mean(trajectories, 0)
+    # Mean trajectory across trials (u_t)
+    mean_trajectory = np.mean(trajectories, 0) # [dimensions x timesteps]
 
     # Mean of spanned latent space (u)
-    mean_latent_space = np.mean(mean_trajectory, 1)
+    mean_latent_space = np.mean(mean_trajectory, 1) # [dimensions]
 
-    # Calculate total absolute variance around the mean of the latent space (x_t - u)
+    # Calculate overall absolute variance around the mean of the latent space (x_t - u)
     trials, dimensions, time = trajectories.shape
-    array_like_mean_latent_space = np.tile(np.tile(mean_latent_space, (time, 1)).T, (trials, 1, 1))
-    var_total = np.mean(np.abs(trajectories - array_like_mean_latent_space))
+    array_like_mean_latent_space = np.tile(np.tile(mean_latent_space, (time, 1)).T, (trials, 1, 1)) # repmat mean_latent_space = [trials x dimensions x timesteps]
+    overall_var = np.mean(np.abs(trajectories - array_like_mean_latent_space)) # scalar
 
     # Calculate the dispersion around the mean trajectory (x_t - u_t)
-    array_like_mean_trajectory = np.tile(mean_trajectory, (trials, 1, 1))
-    latent_dispersion = np.mean(np.abs(trajectories - array_like_mean_trajectory))
+    array_like_mean_trajectory = np.tile(mean_trajectory, (trials, 1, 1)) # repmat mean_trajectory = [trials x dimensions x timesteps]
+    latent_dispersion = np.mean(np.abs(trajectories - array_like_mean_trajectory), axis=(1,2)) # [trials]
 
-    relative_latent_dispersion = latent_dispersion / var_total
+    relative_latent_dispersion = latent_dispersion / overall_var # [trials]
 
     return relative_latent_dispersion
 

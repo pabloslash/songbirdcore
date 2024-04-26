@@ -1,0 +1,8 @@
+.ipynb_checkpoints/
+songbirdcore.egg-info/
+songbirdcore/__pycache__/
+songbirdcore/spikefinder/.ipynb_checkpoints/
+songbirdcore/spikefinder/__pycache__/
+songbirdcore/statespace_analysis/.ipynb_checkpoints/
+songbirdcore/statespace_analysis/__pycache__/
+__pycache__/

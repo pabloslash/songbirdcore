@@ -10,7 +10,7 @@ syl_colors = {1:'#000000', # s1
               9:'#349946', # intra-motif note: green #349946
               10:'#FEB4D9', # intro note
               11:'#FFFF6D', # calls
-              12:'#00FFFF', # Unlabeled
+              12:'#EBEBEB', # Unlabeled
               13:'#EBEBEB', # silence
               14:'#EBEBEB'} 
 
@@ -36,8 +36,8 @@ style_dict = {
     },
     'barstyle': {
         'default': '',
-        'time': '-',
-        'neurons': '..',
+        'time': '..',
+        'neurons': '-',
         'all_neuron_control': '-',
         'sua_neuron_control': '..',
     }
