@@ -55,6 +55,7 @@ class TextgridLabels:
             Return a list of time intervals [start_s, end_s] where the labels.Textgrid file is missing a label.
         """
         tg = tgio.openTextgrid(self.textgrid_file_path)
+        print('Tier Name List: ', tg.tierNameList)
         entryList = tg.tierDict[labels_tier].entryList # Get all intervals                                                  
                     
         # Create list of 'missing-label times' in seconds
